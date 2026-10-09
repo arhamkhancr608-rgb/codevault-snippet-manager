@@ -1,0 +1,1 @@
+# codevault-snippet-manager
