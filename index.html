@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CodeVault - Save, organize, search and copy your code snippets.">
+  <title>CodeVault — Snippet Manager</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #131b2e;
+      --panel2: #19243a;
+      --text: #edf2ff;
+      --muted: #91a0bd;
+      --accent: #8b7cff;
+      --border: #27334b;
+      --green: #55d6a5;
+      --red: #ff7185;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .container { width: min(1100px, 92%); margin: auto; }
+    header { border-bottom: 1px solid var(--border); }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 22px 0;
+    }
+    .brand { font-size: 23px; font-weight: 800; letter-spacing: -.7px; }
+    .brand span { color: var(--accent); }
+    .subtitle { color: var(--muted); font-size: 13px; margin-top: 5px; }
+    .button {
+      border: 1px solid var(--border); border-radius: 9px;
+      background: var(--panel2); color: var(--text);
+      padding: 10px 14px; font-weight: 650;
+    }
+    .primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .button:hover { filter: brightness(1.13); }
+    main { padding: 32px 0 55px; }
+    .hero { margin-bottom: 25px; }
+    h1 { font-size: clamp(27px, 4vw, 38px); margin: 0 0 9px; letter-spacing: -1px; }
+    .hero p { color: var(--muted); margin: 0; line-height: 1.6; }
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin: 25px 0;
+    }
+    .stat, .panel, .snippet {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 13px;
+    }
+    .stat { padding: 18px; }
+    .stat-label { color: var(--muted); font-size: 13px; }
+    .stat-value { font-size: 27px; font-weight: 800; margin-top: 8px; }
+    .toolbar { display: flex; gap: 10px; margin: 20px 0; }
+    input, select, textarea {
+      width: 100%; min-width: 0; color: var(--text);
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 9px; padding: 12px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    .toolbar input { flex: 1; }
+    .toolbar select { width: 180px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .snippet { overflow: hidden; }
+    .snippet-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; padding: 17px 17px 10px;
+    }
+    .snippet h3 { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+    .snippet-desc { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 7px; }
+    .tag {
+      display: inline-block; margin-top: 9px; color: #c3baff;
+      background: #29254c; border-radius: 5px; padding: 4px 7px; font-size: 11px;
+    }
+    pre {
+      margin: 8px 0 0; padding: 17px; background: #090e1a;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      overflow: auto; max-height: 220px;
+    }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.7; }
+    .snippet-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 13px 15px; }
+    .small { padding: 7px 10px; font-size: 12px; }
+    .delete { color: var(--red); }
+    .empty {
+      text-align: center; color: var(--muted); padding: 42px 15px;
+      border: 1px dashed var(--border); border-radius: 13px;
+      grid-column: 1 / -1;
+    }
+    .panel { padding: 20px; margin-bottom: 22px; }
+    .panel h2 { margin: 0 0 17px; font-size: 18px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field label { font-size: 12px; color: var(--muted); }
+    .wide { grid-column: 1 / -1; }
+    textarea { resize: vertical; min-height: 130px; font-family: Consolas, monospace; }
+    .form-actions { display: flex; gap: 10px; margin-top: 15px; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 22px 0; border-top: 1px solid var(--border); }
+    .notice { color: var(--green); font-size: 12px; min-height: 18px; margin-top: 10px; }
+    @media (max-width: 650px) {
+      .grid { grid-template-columns: 1fr; }
+      .stats { gap: 8px; }
+      .stat { padding: 12px; }
+      .stat-value { font-size: 22px; }
+      .toolbar { flex-direction: column; }
+      .toolbar select { width: 100%; }
+      .form-grid { grid-template-columns: 1fr; }
+      .wide { grid-column: auto; }
+      .topbar { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container topbar">
+      <div>
+        <div class="brand">Code<span>Vault</span> &lt;/&gt;</div>
+        <div class="subtitle">Your personal library of reusable code</div>
+      </div>
+      <button class="button primary" onclick="document.getElementById('title').focus()">+ New snippet</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Keep your best code close.</h1>
+      <p>Save useful snippets, organize by language, and copy code whenever you need it.</p>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><div class="stat-label">Total snippets</div><div class="stat-value" id="total">0</div></div>
+      <div class="stat"><div class="stat-label">Languages</div><div class="stat-value" id="languages">0</div></div>
+      <div class="stat"><div class="stat-label">Matching results</div><div class="stat-value" id="matching">0</div></div>
+    </section>
+
+    <section class="panel" id="editor">
+      <h2 id="form-heading">Create a snippet</h2>
+      <form id="snippet-form">
+        <div class="form-grid">
+          <div class="field">
+            <label for="title">Snippet title *</label>
+            <input id="title" maxlength="80" placeholder="e.g. JavaScript array filter" required>
+          </div>
+          <div class="field">
+            <label for="language">Language *</label>
+            <select id="language" required>
+              <option>JavaScript</option><option>HTML</option><option>CSS</option>
+              <option>Python</option><option>Java</option><option>SQL</option>
+              <option>JSON</option><option>Bash</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field wide">
+            <label for="description">Description</label>
+            <input id="description" maxlength="180" placeholder="What does this code do?">
+          </div>
+          <div class="field wide">
+            <label for="code-input">Code *</label>
+            <textarea id="code-input" maxlength="20000" placeholder="Paste your code here..." required></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="button primary" id="save-button" type="submit">Save snippet</button>
+          <button class="button" id="cancel-button" type="button" hidden>Cancel edit</button>
+        </div>
+        <div class="notice" id="notice" role="status"></div>
+      </form>
+    </section>
+
+    <section>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search titles, descriptions, or code..." aria-label="Search snippets">
+        <select id="filter" aria-label="Filter by language">
+          <option value="all">All languages</option>
+          <option>JavaScript</option><option>HTML</option><option>CSS</option>
+          <option>Python</option><option>Java</option><option>SQL</option>
+          <option>JSON</option><option>Bash</option><option>Other</option>
+        </select>
+      </div>
+      <div class="grid" id="snippets"></div>
+    </section>
+  </main>
+
+  <footer>CodeVault · Built with HTML, CSS & JavaScript · Your snippets stay in this browser</footer>
+
+  <script>
+    const STORAGE_KEY = "codevault-snippets-v1";
+    const starterSnippets = [
+      {
+        id: "starter-1", title: "Remove duplicates from an array",
+        language: "JavaScript", description: "Create a new array containing unique values.",
+        code: "const unique = [...new Set(items)];"
+      },
+      {
+        id: "starter-2", title: "Center an element with Flexbox",
+        language: "CSS", description: "Center content horizontally and vertically.",
+        code: ".container {\\n  display: flex;\\n  justify-content: center;\\n  align-items: center;\\n}"
+      },
+      {
+        id: "starter-3", title: "Python list comprehension",
+        language: "Python", description: "Build a list from values that meet a condition.",
+        code: "squares = [n * n for n in numbers if n > 0]"
+      }
+    ];
+
+    const $ = id => document.getElementById(id);
+    let snippets = loadSnippets();
+    let editingId = null;
+
+    function loadSnippets() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved !== null) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (error) {
+        console.warn("Could not load saved snippets.", error);
+      }
+      return starterSnippets.map(item => ({...item}));
+    }
+
+    function persist() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(snippets));
+        return true;
+      } catch (error) {
+        alert("Could not save snippets. Your browser storage may be full or disabled.");
+        return false;
+      }
+    }
+
+    function render() {
+      const query = $("search").value.trim().toLowerCase();
+      const language = $("filter").value;
+      const filtered = snippets.filter(item => {
+        const text = [item.title, item.description, item.language, item.code].join(" ").toLowerCase();
+        return text.includes(query) && (language === "all" || item.language === language);
+      });
+
+      $("total").textContent = snippets.length;
+      $("languages").textContent = new Set(snippets.map(item => item.language)).size;
+      $("matching").textContent = filtered.length;
+      $("snippets").replaceChildren();
+
+      if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = snippets.length ? "No snippets match your search." : "No snippets yet. Create your first one above!";
+        $("snippets").append(empty);
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement("article");
+        card.className = "snippet";
+
+        const head = document.createElement("div");
+        head.className = "snippet-head";
+        const info = document.createElement("div");
+        const title = document.createElement("h3");
+        title.textContent = item.title;
+        const desc = document.createElement("div");
+        desc.className = "snippet-desc";
+        desc.textContent = item.description || "No description provided.";
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = item.language;
+        info.append(title, desc, tag);
+        head.append(info);
+
+        const pre = document.createElement("pre");
+        const code = document.createElement("code");
+        code.textContent = item.code;
+        pre.append(code);
+
+        const actions = document.createElement("div");
+        actions.className = "snippet-actions";
+        actions.append(
+          makeButton("Copy code", "button small primary", () => copySnippet(item)),
+          makeButton("Edit", "button small", () => editSnippet(item)),
+          makeButton("Delete", "button small delete", () => deleteSnippet(item.id))
+        );
+        card.append(head, pre, actions);
+        $("snippets").append(card);
+      });
+    }
+
+    function makeButton(label, className, callback) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = className;
+      button.textContent = label;
+      button.addEventListener("click", callback);
+      return button;
+    }
+
+    async function copySnippet(item) {
+      try {
+        await navigator.clipboard.writeText(item.code);
+        $("notice").textContent = "Code copied to clipboard!";
+      } catch (error) {
+        const fallback = document.createElement("textarea");
+        fallback.value = item.code;
+        fallback.style.position = "fixed";
+        fallback.style.opacity = "0";
+        document.body.append(fallback);
+        fallback.select();
+        const copied = document.execCommand("copy");
+        fallback.remove();
+        $("notice").textContent = copied ? "Code copied to clipboard!" : "Copy failed. Select the code and copy it manually.";
+      }
+    }
+
+    function editSnippet(item) {
+      editingId = item.id;
+      $("title").value = item.title;
+      $("language").value = item.language;
+      $("description").value = item.description || "";
+      $("code-input").value = item.code;
+      $("form-heading").textContent = "Edit snippet";
+      $("save-button").textContent = "Update snippet";
+      $("cancel-button").hidden = false;
+      $("editor").scrollIntoView({behavior: "smooth", block: "start"});
+      $("title").focus();
+    }
+
+    function resetForm() {
+      editingId = null;
+      $("snippet-form").reset();
+      $("form-heading").textContent = "Create a snippet";
+      $("save-button").textContent = "Save snippet";
+      $("cancel-button").hidden = true;
+    }
+
+    function deleteSnippet(id) {
+      if (!confirm("Delete this snippet? This cannot be undone.")) return;
+      snippets = snippets.filter(item => item.id !== id);
+      if (!persist()) return;
+      if (editingId === id) resetForm();
+      $("notice").textContent = "Snippet deleted.";
+      render();
+    }
+
+    $("snippet-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const title = $("title").value.trim();
+      const language = $("language").value;
+      const description = $("description").value.trim();
+      const code = $("code-input").value;
+
+      if (!title || !code.trim()) {
+        $("notice").textContent = "Please enter a title and some code.";
+        return;
+      }
+
+      const previous = snippets.slice();
+      if (editingId) {
+        snippets = snippets.map(item => item.id === editingId
+          ? {...item, title, language, description, code}
+          : item);
+      } else {
+        snippets.unshift({
+          id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
+          title, language, description, code
+        });
+      }
+
+      if (!persist()) {
+        snippets = previous;
+        return;
+      }
+      resetForm();
+      $("notice").textContent = "Snippet saved successfully!";
+      render();
+    });
+
+    $("cancel-button").addEventListener("click", () => {
+      resetForm();
+      $("notice").textContent = "";
+    });
+    $("search").addEventListener("input", render);
+    $("filter").addEventListener("change", render);
+
+    render();
+  </script>
+</body>
+</html>
